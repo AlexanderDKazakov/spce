@@ -98,14 +98,15 @@ impl Structure {
     /// energy_electro =      ∑        ∑   -------------------         [kcal / mol]
     ///                       i        j           r
     ///
-    /// Kc  = 332.1        [angstrom * kcal / ( mol * e^{2} )]
-    /// Kc* = 10*Kc = 3321 [   nm    * kcal / ( mol * e^{2} )]
+    /// Kc           = 332.1    [angstrom * kcal / ( mol * e^{2} )]
+    /// Kc*  = 10*Kc = 3321     [   nm    * kcal / ( mol * e^{2} )]
+    /// Kc** = 42*Kc = 3321*4.2 [   nm    * kJ   / ( mol * e^{2} ) ]
     /// q_{i/j} in [e]
     /// r in angstrom???
     ///
     fn get_electrostatic_contrib(&self) -> f64 {
         let mut electro_energy = 0f64;
-        let Kc = 3321f64; // nm * kcal / (mol * e^{2})
+        let Kc = 4.2*3321f64; // nm * kJ / (mol * e^{2})
 
         for (idx_i, atom_i) in self.atoms.iter().enumerate() {
             for (idx_j, atom_j) in self.atoms.iter().enumerate() {
@@ -120,7 +121,7 @@ impl Structure {
 
     /// Calculating SPC energy
     ///
-    /// SPC_energy = energy_LJ + energy_electro
+    /// SPC_energy = energy_LJ [kJ/mol] + energy_electro [kJ/mol]
     ///
     fn calc_energy(&self) {
         let energy: f64;
@@ -129,9 +130,9 @@ impl Structure {
 
         energy = lj_oo + electro;
 
-        println!("Total Energy[kcal/mol]: {}", energy);     // 
-        println!("          LJ[kcal/mol]: {}", lj_oo);      // 
-        println!("     Electro[kcal/mol]: {}\n", electro);  // 
+        println!("Total Energy[kcal/mol]: {} | hartree {}", energy,    energy  / 2600f64);     // 
+        println!("          LJ[kcal/mol]: {} | hartree {}", lj_oo,     lj_oo   / 2600f64);      // 
+        println!("     Electro[kcal/mol]: {} | hartree {}\n", electro, electro / 2600f64);  // 
 
     }
 }
