@@ -1,4 +1,4 @@
-mod lib;
+mod utils;
 
 use std::process;
 use std::env;
@@ -8,12 +8,12 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        lib::help();
+        utils::help();
         process::exit(1);
     }
     let filename = Path::new(&args[1]);
     
-    if let Err(e) = lib::run(filename) {
+    if let Err(e) = utils::run(filename) {
         eprintln!("Application error: {}", e);
         process::exit(1);
     }
