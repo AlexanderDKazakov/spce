@@ -143,7 +143,7 @@ impl Structure {
     /// 
     /// Assuming the r_{ij} in angstrom -- [1e-10 m]
     /// 
-    fn get_electrostatic_contrib(&self) -> f64 {
+    fn get_inter_electrostatic_contrib(&self) -> f64 {
         let mut electro_energy = 0f64;
         let Kc = 1394.82f64; // angstrom * kJ / (mol * e^{2})
 
@@ -154,20 +154,13 @@ impl Structure {
                     for atom_k in mol_i.get_atoms().iter() {
                         for atom_l in mol_j.get_atoms().iter() {
                             let r_ij: f64 = atom_k.distance_to(atom_l);
-                            let contrib: f64 = (Kc * atom_k.get_charge() * atom_l.get_charge()) / r_ij;
-                            // println!("[{}] atom_k: {} | [{}] atom_l: {} | r_ij: {} | [E]energy {:.6} ", mol_i.get_name(), atom_k.get_name(), mol_j.get_name(), atom_l.get_name(), r_ij, contrib);
-                            electro_energy += contrib;
+                            electro_energy += (Kc * atom_k.get_charge() * atom_l.get_charge()) / r_ij;
                         }
                     }
                 }
             }
         }
-
-        println!("Electro: {}", electro_energy);
-
-        // polarization_correction 
-        let polarization_correction: f64 = self.get_polarization_correction();
-        electro_energy + polarization_correction
+        electro_energy
     }
 
     /// ## Calculating SPC energy
@@ -176,15 +169,25 @@ impl Structure {
     ///
     pub fn calc_energy(&self) {
         let energy: f64;
-        let lj_oo   = self.get_lj_oo_energy();
-        let electro = self.get_electrostatic_contrib();
+        let mut intra_electro: f64 = 0.0f64;
+        
+        // self energy via model
+        for mol in self.molecules.iter() { intra_electro += mol.get_self_energy(); }
+        // LJ O-O
+        let lj_oo         = self.get_lj_oo_energy();
+        // Inter molecular interactions
+        let inter_electro = self.get_inter_electrostatic_contrib();
+        // Polarization corrections
+        let polarization_correction: f64 = self.get_polarization_correction();
 
-        energy = lj_oo + electro;
+        energy = lj_oo + inter_electro + intra_electro + polarization_correction;
 
         println!("Structure: #{} ", self.len());
-        println!("Total Energy[kJ/mol]: {:>10.6} | hartree {:.6}",   energy,  energy  / 2600f64);
-        println!("          LJ[kJ/mol]: {:>10.6} | hartree {:.6}",   lj_oo,   lj_oo   / 2600f64);
-        println!("     Electro[kJ/mol]: {:>10.6} | hartree {:.6}\n", electro, electro / 2600f64);
+        println!("            LJ[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   lj_oo,                   lj_oo                   / 2600f64);
+        println!("[Inter]Electro[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   inter_electro,           inter_electro           / 2600f64);
+        println!("[Intra]Electro[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   intra_electro,           intra_electro           / 2600f64);
+        println!("Polarization  [kJ/mol]: {:>15.6} | hartree: {:>10.6}",   polarization_correction, polarization_correction / 2600f64);
+        println!("  Total Energy[kJ/mol]: {:>15.6} | hartree: {:>10.6}\n", energy,                  energy                  / 2600f64);
 
     }
 }

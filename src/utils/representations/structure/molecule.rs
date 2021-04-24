@@ -97,6 +97,10 @@ impl Molecule {
 
         self.energy = energy;
     }
+
+    pub fn get_self_energy(&self) -> f64 {
+        self.energy
+    }
 }
 
 
@@ -110,8 +114,8 @@ mod tests {
         let mut mol = Molecule::new();
 
         let atom1 = Atom::new("O".to_string(), -0.8476, vec![1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0]);
-        let atom2 = Atom::new("H".to_string(), 0.4238,  vec![1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0]);
-        let atom3 = Atom::new("H".to_string(), 0.4238,  vec![1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0]);
+        let atom2 = Atom::new("H".to_string(),  0.4238, vec![1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0]);
+        let atom3 = Atom::new("H".to_string(),  0.4238, vec![1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0]);
 
         mol.add_atom(atom1);
         mol.add_atom(atom2);
