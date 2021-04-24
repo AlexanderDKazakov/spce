@@ -242,7 +242,7 @@ mod tests {
         assert!( (3515.1980452787766 - str1.get_lj_oo_energy() ).abs() < 1e-9 );
 
         // E: electro
-        assert_eq!(-29.675702726834345f64 + 5.22f64,  str1.get_electrostatic_contrib());
+        assert!( (-29.675702726834345f64 - str1.get_inter_electrostatic_contrib() ).abs() < 1e-9 );
 
     }
 }
