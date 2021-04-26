@@ -169,10 +169,7 @@ impl Structure {
     ///
     pub fn calc_energy(&self) {
         let energy: f64;
-        let mut intra_electro: f64 = 0.0f64;
         
-        // self energy via model
-        for mol in self.molecules.iter() { intra_electro += mol.get_self_energy(); }
         // LJ O-O
         let lj_oo         = self.get_lj_oo_energy();
         // Inter molecular interactions
@@ -180,12 +177,11 @@ impl Structure {
         // Polarization corrections
         let polarization_correction: f64 = self.get_polarization_correction();
 
-        energy = lj_oo + inter_electro + intra_electro + polarization_correction;
+        energy = lj_oo + inter_electro + polarization_correction;
 
         println!("Structure: #{} ", self.len());
         println!("            LJ[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   lj_oo,                   lj_oo                   / 2600f64);
         println!("[Inter]Electro[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   inter_electro,           inter_electro           / 2600f64);
-        println!("[Intra]Electro[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   intra_electro,           intra_electro           / 2600f64);
         println!("Polarization  [kJ/mol]: {:>15.6} | hartree: {:>10.6}",   polarization_correction, polarization_correction / 2600f64);
         println!("  Total Energy[kJ/mol]: {:>15.6} | hartree: {:>10.6}\n", energy,                  energy                  / 2600f64);
 
