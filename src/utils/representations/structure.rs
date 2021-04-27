@@ -1,5 +1,7 @@
 mod molecule;
 
+const W1_ENERGY_HARTREE: f64 = -17.164634771108034;
+
 pub use molecule::{Molecule, Atom};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -169,21 +171,40 @@ impl Structure {
     ///
     pub fn calc_energy(&self) {
         let energy: f64;
+        let mut energy_DFT_hartree: f64 = 0.0f64;
+
+        /*Lattice="10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0" Properties=species:S:1:pos:R:3:forces:R:3 energy=VAL pbc="T T T" dipole="X Y Z"*/
+        let iter: Vec<&str> = self.lat_info.split("=").collect();
+        if let Some(value) = iter.get(3) {
+            // VAL pbc
+            let energy_p_something: Vec<&str> = value.split_whitespace().collect();
+            if let Some (value) = energy_p_something.get(0) {
+                if let Ok(energy_DFT) = value.parse::<f64>() {
+                    energy_DFT_hartree = energy_DFT;
+                }
+            }
+        }
+    
         
         // LJ O-O
-        let lj_oo         = self.get_lj_oo_energy();
+        let lj_oo:                   f64 = self.get_lj_oo_energy();
         // Inter molecular interactions
-        let inter_electro = self.get_inter_electrostatic_contrib();
+        let inter_electro:           f64 = self.get_inter_electrostatic_contrib();
         // Polarization corrections
         let polarization_correction: f64 = self.get_polarization_correction();
 
         energy = lj_oo + inter_electro + polarization_correction;
 
         println!("Structure: #{} ", self.len());
-        println!("            LJ[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   lj_oo,                   lj_oo                   / 2600f64);
-        println!("[Inter]Electro[kJ/mol]: {:>15.6} | hartree: {:>10.6}",   inter_electro,           inter_electro           / 2600f64);
-        println!("Polarization  [kJ/mol]: {:>15.6} | hartree: {:>10.6}",   polarization_correction, polarization_correction / 2600f64);
-        println!("  Total Energy[kJ/mol]: {:>15.6} | hartree: {:>10.6}\n", energy,                  energy                  / 2600f64);
+        println!("            LJ[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", lj_oo,                   lj_oo                   / 2600f64);
+        println!("[Inter]Electro[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", inter_electro,           inter_electro           / 2600f64);
+        println!("  Polarization[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", polarization_correction, polarization_correction / 2600f64);
+        println!("  Total Energy[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", energy,                  energy                  / 2600f64);
+        println!("[(DFT-N*W1)-SPC/E][hartree]: {:>10.6} | [DFT-N*W1]: {:>10.6} [W1]: {:10.6}\n", 
+            (energy_DFT_hartree - (self.len() as f64 * W1_ENERGY_HARTREE)) - energy / 2600f64 ,
+            energy_DFT_hartree - (self.len() as f64 * W1_ENERGY_HARTREE),
+            W1_ENERGY_HARTREE
+    );
 
     }
 }
