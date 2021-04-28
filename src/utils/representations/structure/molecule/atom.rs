@@ -9,7 +9,7 @@ pub struct Atom {
 }
 
 impl Atom {
-    pub fn _new(name: String, charge: f64, pos: Vec<f64>, fpos: Vec<f64>) -> Self {
+    pub fn new(name: String, charge: f64, pos: Vec<f64>, fpos: Vec<f64>) -> Self {
         Atom {
             name,
             charge,
@@ -17,7 +17,7 @@ impl Atom {
             fpos,
         }
     }
-    pub fn _set_charge(&mut self, q: f64) {
+    pub fn set_charge(&mut self, q: f64) {
         self.charge = q;
     }
 
