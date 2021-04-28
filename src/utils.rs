@@ -25,10 +25,13 @@ where P: AsRef<Path>, {
 
 fn read_file(filename: &Path) -> Result<Vec<Structure>, Box<dyn std::error::Error + 'static>>{
     let mut structures: Vec<Structure> = Vec::new();
+    let mut structure:  Structure      = Structure::new();
 
-    let mut structure: Structure = Structure::new();
-    let mut molecule: Molecule   = Molecule::new();
+    let mut atoms:      Vec<Atom>      = Vec::new();
+    let mut molecules:  Vec<Molecule>  = Vec::new();
+    let mut molecule:   Molecule       = Molecule::new();
 
+    let mut idx: usize = 0;
     match read_lines(filename) {
         Ok(lines) => {
             for line in lines {
@@ -45,30 +48,57 @@ fn read_file(filename: &Path) -> Result<Vec<Structure>, Box<dyn std::error::Erro
                                 }
                                 structure.set_lat_info(line.clone());
                             }
+                            //idx = 0;
                         }
                         Ok(atom) => {
-                            // println!("Atom name: {}, charge: {}, pos: {:?}, fpos: {:?}", atom.name, atom.charge, atom.pos, atom.fpos);
-                            molecule.add_atom(atom);
-                            if molecule.len() == 3 {
-                                molecule.update_self_energy_with_model("SPC");
-                                // println!("Molecule name: {}, {:?}, energy: {}", molecule.name, molecule.atoms, molecule.energy);
-                                structure.add_molecule(molecule.clone());
-                                molecule.reset();
+                            //println!("Atom name: {}, pos: {:?}", atom.name, atom.pos);
+                            match atom.get_name() {
+
+                                "H" => {
+                                    if !molecule.has_natoms(2, "H") {
+                                        molecule.add_atom(atom);
+                                    } else {
+                                        molecules.push(molecule.clone());
+                                        molecule.reset();
+                                        molecule.add_atom(atom);
+                                    }
+                                },
+                                "O" => {
+                                    // last 2 H
+                                    if molecule.has_natoms(2, "H") {
+                                        molecules.push(molecule.clone());
+                                        molecule.reset();
+                                    } 
+                                    match molecules.get_mut(idx) {
+                                        Some(molecule) => {
+                                            molecule.add_atom(atom);
+                                            if molecule.len() == 3 {
+                                                structure.add_molecule(molecule.clone());
+                                            }
+                                        },
+                                        None => panic!("Strange, but there is more O than molecules...")
+                                    }
+                                    idx += 1;  // molecules 
+                                },
+                                _ => panic!("Not implemented case :( ")
                             }
                         }
                     }
                 }
             }
-            // last 
-            if !structure.is_empty() {
-                structures.push(structure.clone());
-                structure.reset();
-            }
-            
-            Ok(structures)
         },
-        Err(e) => Err(Box::new(e)),
+        Err(e) => println!("Problem: {}", e),
     }
+
+    // last 
+    if !structure.is_empty() {
+        structures.push(structure.clone());
+        structure.reset();
+    }
+    
+    Ok(structures)
+
+
 }
 
 pub fn help() {
@@ -90,6 +120,18 @@ pub fn run(filename: &Path) -> Result<(), Box<dyn Error>> {
         },
         Err(e) => Err(e)
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    fn test_read_file() {
+
+    }
+
 }
 
 
