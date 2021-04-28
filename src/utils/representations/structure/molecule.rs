@@ -19,11 +19,11 @@ impl Molecule {
         }
     }
 
-    pub fn _set_name(&mut self, name: &str) {
+    pub fn set_name(&mut self, name: &str) {
         self.name = String::from(name)
     }
 
-    pub fn _get_name(&self) -> &str {
+    pub fn get_name(&self) -> &str {
         self.name.as_ref()
     }
 
@@ -39,6 +39,17 @@ impl Molecule {
 
     pub fn get_atoms(&self) -> Vec<Atom> {
         self.atoms.clone()
+    }
+
+    pub fn has_natoms(&self, n: u32,  atom_name:&str) -> bool {
+        let mut occurrences: u32 = 0u32;
+        for atom in &self.atoms {
+            if atom.get_name() == atom_name {
+                occurrences += 1;
+            }
+        }
+
+        occurrences == n
     }
 
     pub fn get_oxygen_atom(&self) -> Option<Atom> {
@@ -98,7 +109,7 @@ impl Molecule {
         self.energy = energy;
     }
 
-    pub fn _get_self_energy(&self) -> f64 {
+    pub fn get_self_energy(&self) -> f64 {
         self.energy
     }
 }
@@ -121,7 +132,7 @@ mod tests {
         mol.add_atom(atom2);
         mol.add_atom(atom3);
 
-        mol._set_name("H2O");
+        mol.set_name("H2O");
 
         assert!(mol.get_oxygen_atom().is_some());
 
@@ -130,5 +141,8 @@ mod tests {
 
         mol.update_self_energy_with_model("SPC/E");
         assert!( (-848.6645422369294 - mol.energy).abs() < 1e-9  );
+
+        assert!(mol.has_natoms(2, "H"));
+        assert!(mol.has_natoms(1, "O"));
     }
 }
