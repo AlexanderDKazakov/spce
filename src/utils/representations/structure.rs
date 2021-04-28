@@ -9,7 +9,9 @@ pub struct Structure {
     molecules:     Vec<Molecule>,
     lat_info:      String,
     num_molecules: usize,
-    energy:        f64,  // not sure that we need it
+    energy:        f64,  
+    energy_diff:   f64, 
+    dipole_moment: Vec<f64>,
 }
 
 impl Structure {
@@ -19,6 +21,8 @@ impl Structure {
             lat_info: String::from(""),
             num_molecules: 0,
             energy: 0f64,
+            energy_diff: 0f64,
+            dipole_moment: vec![0.0f64, 0.0f64, 0.0f64],
         }
     }
 
@@ -34,7 +38,7 @@ impl Structure {
         self.molecules.push(molecule)
     }
 
-    pub fn update_num_molecules(&mut self) {
+    pub fn _update_num_molecules(&mut self) {
         self.num_molecules = self.molecules.len()
     }
 
@@ -132,14 +136,14 @@ impl Structure {
     /// 
     /// ```
     ///                    [A atom] [B atom]
-    ///                                    Kc * q_{i} * q_{j}
+    ///                                    kc * q_{i} * q_{j}
     /// energy_electro =      ∑        ∑   -------------------    [kJ / mol]
     ///                       i        j           r_{ij}
     ///
     /// ```
-    /// `Kc`           = 332.1               [angstrom * kcal / ( mol * e^{2} )]
+    /// `kc`           = 332.1               [angstrom * kcal / ( mol * e^{2} )]
     /// 
-    /// `Kc*`          = 332.1*4.2 = 1394.82 [angstrom * kJ   / ( mol * e^{2} )]
+    /// `kc*`          = 332.1*4.2 = 1394.82 [angstrom * kJ   / ( mol * e^{2} )]
     /// 
     /// `q_{i/j}` in [e]
     /// 
@@ -147,7 +151,7 @@ impl Structure {
     /// 
     fn get_inter_electrostatic_contrib(&self) -> f64 {
         let mut electro_energy = 0f64;
-        let Kc = 1394.82f64; // angstrom * kJ / (mol * e^{2})
+        let kc = 1394.82f64; // angstrom * kJ / (mol * e^{2})
 
         for (idx_mol_i, mol_i) in self.molecules.iter().enumerate() {
             for (idx_mol_j, mol_j) in self.molecules.iter().enumerate() {
@@ -156,7 +160,7 @@ impl Structure {
                     for atom_k in mol_i.get_atoms().iter() {
                         for atom_l in mol_j.get_atoms().iter() {
                             let r_ij: f64 = atom_k.distance_to(atom_l);
-                            electro_energy += (Kc * atom_k.get_charge() * atom_l.get_charge()) / r_ij;
+                            electro_energy += (kc * atom_k.get_charge() * atom_l.get_charge()) / r_ij;
                         }
                     }
                 }
@@ -165,27 +169,66 @@ impl Structure {
         electro_energy
     }
 
+    /// ## Parse some quantities from DFT calculations
+    ///
+    /// Examples: 
+    ///           energy
+    ///           dipole_moment
+    ///           ...?
+    pub fn parse(&self, what:&str) -> Vec<f64> {
+        let mut output: Vec<f64> = Vec::new();
+
+        /*_Lattice="10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0" 
+         * Properties=species:S:1:pos:R:3:forces:R:3 
+         * energy=VAL pbc="T T T" dipole="X Y Z"*/
+        let iter: Vec<&str> = self.lat_info.split("=").collect();
+
+        if what == "energy" {
+            if let Some(value) = iter.get(3) {
+                // VAL pbc
+                let energy_p_something: Vec<&str> = value.split_whitespace().collect();
+                if let Some (value) = energy_p_something.get(0) {
+                    if let Ok(energy_dft) = value.parse::<f64>() {
+                        output.push(energy_dft);
+                    }
+                }
+            }
+        }
+        if what == "dipole_moment" {
+            if let Some(value) = iter.get(5) {
+                // "VALX VALY VALZ"
+                let cutted_string: &str = &value[1..value.len()-1];
+                let dipole_moment_xyz: Vec<&str> = cutted_string.split_whitespace().collect();
+                for dipole_moment_value in dipole_moment_xyz {
+                    if let Ok(dipole_moment_per_axis) = dipole_moment_value.parse::<f64>() {
+                        output.push(dipole_moment_per_axis);
+                    }
+                }
+            }
+        }
+
+        output
+    }
+
     /// ## Calculating SPC energy
     ///
     /// `SPC_energy` = `energy_LJ` [kJ/mol] + `energy_electro` [kJ/mol]
     ///
-    pub fn calc_energy(&self) {
-        let energy: f64;
-        let mut energy_DFT_hartree: f64 = 0.0f64;
+    pub fn calc_energy(&mut self) {
 
-        /*Lattice="10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0" Properties=species:S:1:pos:R:3:forces:R:3 energy=VAL pbc="T T T" dipole="X Y Z"*/
-        let iter: Vec<&str> = self.lat_info.split("=").collect();
-        if let Some(value) = iter.get(3) {
-            // VAL pbc
-            let energy_p_something: Vec<&str> = value.split_whitespace().collect();
-            if let Some (value) = energy_p_something.get(0) {
-                if let Ok(energy_DFT) = value.parse::<f64>() {
-                    energy_DFT_hartree = energy_DFT;
-                }
-            }
+        let nmulw1: f64 = self.len() as f64 * W1_ENERGY_HARTREE;
+
+        let energy_dft_hartree: f64;
+        match self.parse("energy").get(0) {
+            Some(energy) => energy_dft_hartree = energy.clone(),
+            None         => energy_dft_hartree = 0.0f64,
         }
-    
-        
+
+        match self.parse("dipole_moment").len() {
+            3 => self.dipole_moment = self.parse("dipole_moment"), 
+            _ => self.dipole_moment = vec![0.0f64, 0.0f64, 0.0f64],
+        }
+
         // LJ O-O
         let lj_oo:                   f64 = self.get_lj_oo_energy();
         // Inter molecular interactions
@@ -193,18 +236,46 @@ impl Structure {
         // Polarization corrections
         let polarization_correction: f64 = self.get_polarization_correction();
 
-        energy = lj_oo + inter_electro + polarization_correction;
+        self.energy      = lj_oo + inter_electro + polarization_correction;
+        self.energy_diff = (energy_dft_hartree - nmulw1) - self.energy / 2600f64;
 
-        println!("Structure: #{} ", self.len());
-        println!("            LJ[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", lj_oo,                   lj_oo                   / 2600f64);
-        println!("[Inter]Electro[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", inter_electro,           inter_electro           / 2600f64);
-        println!("  Polarization[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", polarization_correction, polarization_correction / 2600f64);
-        println!("  Total Energy[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", energy,                  energy                  / 2600f64);
-        println!("[(DFT-N*W1)-SPC/E][hartree]: {:>10.6} | [DFT-N*W1]: {:>10.6} [W1]: {:10.6}\n", 
-            (energy_DFT_hartree - (self.len() as f64 * W1_ENERGY_HARTREE)) - energy / 2600f64 ,
-            energy_DFT_hartree - (self.len() as f64 * W1_ENERGY_HARTREE),
-            W1_ENERGY_HARTREE
+        eprintln!("Structure: #{} ", self.len());
+        eprintln!("            LJ[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", lj_oo,                   lj_oo                   / 2600f64);
+        eprintln!("[Inter]Electro[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", inter_electro,           inter_electro           / 2600f64);
+        eprintln!("  Polarization[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", polarization_correction, polarization_correction / 2600f64);
+        eprintln!("  Total Energy[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", self.energy,                  self.energy                  / 2600f64);
+        eprintln!("[hartree] (DFT-N*W1)-SPC/E: {:>11.6} | [DFT-N*W1]: {:>10.6} [W1]: {:10.6}\n", 
+            self.energy_diff,
+            energy_dft_hartree - nmulw1,
+            W1_ENERGY_HARTREE,
     );
+
+    }
+
+    /// ## Prepare output for NNs
+    ///
+    /// `exyz` fileformat
+    ///
+    /// <number_of_atoms>
+    /// Lattice="10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0" Properties=species:S:1:pos:R:3:forces:R:3 energy=VAL pbc="T T T" dipole="X Y Z"
+    /// <ATOM> POS_X POS_Y POS_Z FPOS_X FPOS_Y FPOS_Z
+    /// ...
+    ///
+    pub fn make_exyz(&self) {
+        println!("{}", self.len() as u32 * 3u32);
+        println!("Lattice=\"10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0\" Properties=species:S:1:pos:R:3:forces:R:3 energy={} pbc=\"T T T\" dipole=\"{}\"",
+            self.energy_diff,
+            self.dipole_moment.iter().fold(String::new(), |acc, &val| acc + &val.to_string() + " "),
+            );
+        for molecule in &self.molecules {
+            for atom in molecule.get_atoms() {
+                println!("{} {} {}", 
+                    atom.get_name(), 
+                    atom.get_pos().iter().fold(String::new(), |acc, &pos| acc + &pos.to_string() + " "), 
+                    atom.get_fpos().iter().fold(String::new(), |acc, &pos| acc + &pos.to_string() + " ")
+                    );
+            }
+        }
 
     }
 }

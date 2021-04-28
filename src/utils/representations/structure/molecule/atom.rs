@@ -9,7 +9,7 @@ pub struct Atom {
 }
 
 impl Atom {
-    pub fn new(name: String, charge: f64, pos: Vec<f64>, fpos: Vec<f64>) -> Self {
+    pub fn _new(name: String, charge: f64, pos: Vec<f64>, fpos: Vec<f64>) -> Self {
         Atom {
             name,
             charge,
@@ -52,6 +52,14 @@ impl Atom {
 
     pub fn get_name(&self) -> &str {
         self.name.as_str()
+    }
+
+    pub fn get_pos(&self) -> Vec<f64> {
+        self.pos.clone()
+    }
+
+    pub fn get_fpos(&self) -> Vec<f64> {
+        self.fpos.clone()
     }
 }
 

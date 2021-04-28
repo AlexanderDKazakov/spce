@@ -19,11 +19,11 @@ impl Molecule {
         }
     }
 
-    pub fn set_name(&mut self, name: &str) {
+    pub fn _set_name(&mut self, name: &str) {
         self.name = String::from(name)
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn _get_name(&self) -> &str {
         self.name.as_ref()
     }
 
@@ -59,13 +59,13 @@ impl Molecule {
     /// Implementation electrostatic contribution to the energy: 
     /// ```
     ///                    [A atom] [B atom]
-    ///                                    Kc * q_{i} * q_{j}
+    ///                                    kc * q_{i} * q_{j}
     /// energy_electro =      ∑        ∑   -------------------    [kJ / mol]
     ///                       i        j           r_{ij}
     /// ```
-    /// `Kc`           = 332.1               [angstrom * kcal / ( mol * e^{2} )]
+    /// `kc`           = 332.1               [angstrom * kcal / ( mol * e^{2} )]
     /// 
-    /// `Kc*`          = 332.1*4.2 = 1394.82 [angstrom * kJ   / ( mol * e^{2} )]
+    /// `kc*`          = 332.1*4.2 = 1394.82 [angstrom * kJ   / ( mol * e^{2} )]
     /// 
     /// q_{i/j} in [e]
     ///
@@ -80,14 +80,14 @@ impl Molecule {
     /// Assuming the r_{ij} in angstrom -- [1e-10 m]
     pub fn update_self_energy_with_model(&mut self, model: &str) {
         let mut energy: f64 = 0.0f64;
-        let Kc = 1394.82f64; // angstrom * kJ / (mol * e^{2})
+        let kc = 1394.82f64; // angstrom * kJ / (mol * e^{2})
 
         // go through all 3 atoms
         for (idx_i, atom_i) in self.atoms.iter().enumerate() {
             for (idx_j, atom_j) in self.atoms.iter().enumerate() {
                 if idx_i < idx_j {
                     if let Some(r_ij) = atom_i.model_distance_to(model, atom_j) {
-                        energy += (Kc * atom_i.get_charge() * atom_j.get_charge()) / r_ij;
+                        energy += (kc * atom_i.get_charge() * atom_j.get_charge()) / r_ij;
                     } else {
                         panic!("No model distance for {} {}", atom_i.get_name(), atom_j.get_name());
                     }
@@ -98,7 +98,7 @@ impl Molecule {
         self.energy = energy;
     }
 
-    pub fn get_self_energy(&self) -> f64 {
+    pub fn _get_self_energy(&self) -> f64 {
         self.energy
     }
 }
@@ -121,7 +121,7 @@ mod tests {
         mol.add_atom(atom2);
         mol.add_atom(atom3);
 
-        mol.set_name("H2O");
+        mol._set_name("H2O");
 
         assert!(mol.get_oxygen_atom().is_some());
 

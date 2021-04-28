@@ -24,7 +24,6 @@ where P: AsRef<Path>, {
 }
 
 fn read_file(filename: &Path) -> Result<Vec<Structure>, Box<dyn std::error::Error + 'static>>{
-    println!("Provided:\n [File XYZ] {}", filename.display());
     let mut structures: Vec<Structure> = Vec::new();
 
     let mut structure: Structure = Structure::new();
@@ -73,18 +72,19 @@ fn read_file(filename: &Path) -> Result<Vec<Structure>, Box<dyn std::error::Erro
 }
 
 pub fn help() {
-    println!("Usage: ./spce pos.xyz");
+    println!("Usage: ./spce extenden_xyz_file.xyz");
 }
 
 pub fn run(filename: &Path) -> Result<(), Box<dyn Error>> {
-    println!("SPC/E model calculation");
-    println!("File provided: {}", filename.display());
+    eprintln!("### SPC/E model calculation ###");
+    eprintln!("File provided: {}\n", filename.display());
 
     match read_file(filename) {
         Ok(structures) => {
             //println!("{:?}", structures);
-            for structure in structures {
+            for mut structure in structures {
                 structure.calc_energy();
+                structure.make_exyz();
             }
             Ok(())
         },
