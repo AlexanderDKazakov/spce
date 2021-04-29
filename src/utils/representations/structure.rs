@@ -243,13 +243,9 @@ impl Structure {
         eprintln!("            LJ[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", lj_oo,                   lj_oo                   / 2600f64);
         eprintln!("[Inter]Electro[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", inter_electro,           inter_electro           / 2600f64);
         eprintln!("  Polarization[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", polarization_correction, polarization_correction / 2600f64);
-        eprintln!("  Total Energy[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", self.energy,                  self.energy                  / 2600f64);
-        eprintln!("[hartree] (DFT-N*W1)-SPC/E: {:>11.6} | [DFT-N*W1]: {:>10.6} [W1]: {:10.6}\n", 
-            self.energy_diff,
-            energy_dft_hartree - nmulw1,
-            W1_ENERGY_HARTREE,
-    );
-
+        eprintln!("  Total Energy[kJ/mol]: {:>15.6} | [hartree] : {:>10.6}", self.energy,             self.energy             / 2600f64);
+        eprintln!("[hartree]   DFT energy: {:>15.6} | N*W1      : {:>10.6} | [W1] {:10.6}", energy_dft_hartree, nmulw1, W1_ENERGY_HARTREE);
+        eprintln!("[hartree] (DFT-N*W1)-SPC/E: {:>11.6} | [DFT-N*W1]: {:>10.6}\n",  self.energy_diff, energy_dft_hartree - nmulw1);
     }
 
     /// ## Prepare output for NNs
